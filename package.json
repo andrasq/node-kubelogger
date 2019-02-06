@@ -1,6 +1,6 @@
 {
   "name": "kubelogger",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "fast easy k8s logger",
   "main": "index.js",
   "license": "Apache-2.0",

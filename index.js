@@ -60,6 +60,30 @@ Kubelogger.formatMessage = function( time, type, message) {
     try { message = JSON.stringify(message) } catch (err) { message = '"[unserializable object]"' }
     return '{"time":"' + time + '","type":"' + type + '","message":' + message + '}\n';
 };
+Kubelogger.restoreWrites = function restoreWrites( stream ) {
+    if (typeof stream.write.restore === 'function' && stream.write.name === '_writeCatcher_') {
+        stream.write.restore();
+    }
+}
+Kubelogger.captureWrites = function captureWrites( stream, logit ) {
+    // a stream can be sending its writes to only one logger at a time
+    if (stream.write.name === '_writeCatcher_') Kubelogger.restoreWrites(stream);
+
+    var streamWriter = stream.write;
+    stream.write = function _writeCatcher_(chunk, encoding, cb) {
+        if (!cb && typeof encoding === 'function') { cb = encoding; encoding = null }
+
+        // Note: buffers are assumed to not split utf8 chars across chunk boundaries
+        //   This is a safe assumption for line-at-a-time text streams like the console.
+        // TODO: optionally split multi-line strings into separate messages
+
+        if (chunk instanceof Buffer) chunk = String(chunk);
+        else if (chunk.constructor !== String) throw new TypeError('Invalid data, chunk must be a string or Buffer');
+        logit(chunk, cb);
+    }
+    stream.write.restore = function() { return (stream.write = streamWriter) };
+    //this.capturedWrites.push(stream);
+}
 
 // flush the writes still in progress and unhook the intercepts
 Kubelogger.prototype.close = function close( cb ) {
@@ -70,33 +94,19 @@ Kubelogger.prototype.close = function close( cb ) {
 // redirect writes on the stream (eg process.stdout) to our logger instead
 Kubelogger.prototype.captureWrites = function captureWrites( stream ) {
     var logger = this;
-    var streamWriter = stream.write;
-
-    stream.write = function _writeCatcher_(chunk, encoding, cb) {
-        if (!cb && typeof encoding === 'function') { cb = encoding; encoding = null }
-        // Note: buffers are assumed to not split utf8 chars across chunk boundaries
-        //   This is a safe assumption for line-at-a-time text streams like the console.
-        // TODO: optionally split multi-line strings into separate messages
-        if (chunk instanceof Buffer) chunk = String(chunk);
-        else if (chunk.constructor !== String) throw new TypeError('Invalid data, chunk must be a string or Buffer');
-        logger.log(chunk);
-        //if (typeof cb === 'function') logger.fflush(cb);
-        // if callback expected, call it on the next tick, hard to wait for the write
-        if (typeof cb === 'function') setImmediate(cb);
-    }
-    stream.write.restore = function() { return (stream.write = streamWriter) };
+    Kubelogger.captureWrites(stream, function(str, cb) {
+        logger.log(str);
+        if (cb) Kubelogger.fflush(cb);
+    })
     this.capturedWrites.push(stream);
-
     return this;
 }
 
 // restore direct writes to the given stream (eg process.stdout)
 Kubelogger.prototype.restoreWrites = function restoreWrites( stream ) {
+    Kubelogger.restoreWrites(stream);
     var ix = this.capturedWrites.indexOf(stream);
     if (ix >= 0) this.capturedWrites.splice(ix, 1);
-    if (typeof stream.write.restore === 'function' && stream.write.name === '_writeCatcher_') {
-        stream.write.restore();
-    }
     return this;
 }
 
