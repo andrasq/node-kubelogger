@@ -11,7 +11,6 @@ var sysStdout = process.stdout;
 var sysWrite = process.stdout.write;
 
 var qlogger = require('qlogger');
-//var qlogger = require('../qlogger');    // FIXME: 'qlogger'
 var kubelogger = require('./');
 
 module.exports = {

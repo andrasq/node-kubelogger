@@ -16,7 +16,7 @@ var util = require('util');
 var QLogger = require('qlogger');
 var filters = require('qlogger/filters');
 
-var getFormattedTimestamp = filters.formatJsDateIsoString || function() { return new Date().toISOString() };
+var getFormattedTimestamp = filters.formatJsDateIsoString;
 var sysStdout = process.stdout;
 var sysStdoutWrite = process.stdout.write;
 var sysFlushable = new QLogger().addWriter(process.stdout);
