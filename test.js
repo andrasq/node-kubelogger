@@ -95,6 +95,16 @@ module.exports = {
             t.done();
         },
 
+        'should displace an existing capture': function(t) {
+            var logger1 = kubelogger('info', 'cap1').captureWrites(process.stdout);
+            var logger2 = kubelogger('info', 'cap2').captureWrites(process.stdout);
+            var spy = t.stubOnce(kubelogger, 'write', function(str, cb) { cb() });
+            console.log("captured text");
+            t.ok(spy.called);
+            t.contains(spy.args[0][0], '"type":"cap2"');
+            t.done();
+        },
+
         'should restore writes on close': function(t) {
             var logger = kubelogger('info', 'console');
             var spy = t.spy(logger, 'restoreWrites');
