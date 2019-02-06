@@ -15,10 +15,6 @@ var fs = require('fs');
 var util = require('util');
 var QLogger = require('qlogger');
 var filters = require('qlogger/filters');
-// FIXME: 'qlogger'
-//var QLogger = require('../qlogger');
-//var filters = require('../qlogger/filters');
-//var filters = { formatJsDateIsoString: function() { return new Date().toISOString() } };
 
 var getFormattedTimestamp = filters.formatJsDateIsoString || function() { return new Date().toISOString() };
 var sysStdout = process.stdout;
@@ -59,28 +55,19 @@ Kubelogger.write = function write( message, callback ) {
 Kubelogger.fflush = function fflush( callback ) {
     sysFlushable.fflush(callback);
 }
-
-/*
- * filter to convert objects into newline terminated json bundles
- */
 Kubelogger.formatMessage = function( time, type, message) {
+    // convert objects into newline terminated json bundles
     try { message = JSON.stringify(message) } catch (err) { message = '"[unserializable object]"' }
     return '{"time":"' + time + '","type":"' + type + '","message":' + message + '}\n';
 };
 
-/*
- * flush the writes still in progress and unhook the intercepts
- */
+// flush the writes still in progress and unhook the intercepts
 Kubelogger.prototype.close = function close( cb ) {
     while (this.capturedWrites.length > 0) this.restoreWrites(this.capturedWrites.shift());
-    this.fflush(function(err) {
-        cb(err);
-    })
+    this.fflush(cb);
 }
 
-/*
- * redirect writes on the stream (eg process.stdout) to our logger instead
- */
+// redirect writes on the stream (eg process.stdout) to our logger instead
 Kubelogger.prototype.captureWrites = function captureWrites( stream ) {
     var logger = this;
     var streamWriter = stream.write;
@@ -103,9 +90,7 @@ Kubelogger.prototype.captureWrites = function captureWrites( stream ) {
     return this;
 }
 
-/*
- * restore direct writes to the given stream (eg process.stdout)
- */
+// restore direct writes to the given stream (eg process.stdout)
 Kubelogger.prototype.restoreWrites = function restoreWrites( stream ) {
     var ix = this.capturedWrites.indexOf(stream);
     if (ix >= 0) this.capturedWrites.splice(ix, 1);
