@@ -73,7 +73,7 @@ logging error(s).  Call when exiting the app to not leave unwritten messages in 
 Change Log
 ----------
 
-- 1.0.0 - first version
+- 0.9.0 - first version
 
 
 Related Work
