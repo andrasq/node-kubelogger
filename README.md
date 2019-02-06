@@ -52,10 +52,13 @@ stringified string or object being logged.
 ### logger.captureWrites( stream )
 
 Convert all writes to the given stream into log messages sent to this logger.  Log message
-formatting and output is handled as described above.  The written data must be 'string' or
-'Buffer', object mode is not supported and throws a TypeError.  Buffers are converted to
-utf8 and are logged as text.  The assumption is that Buffers contain complete log messages
-not binary data, so utf8 chars split across data chunks will not work right.
+formatting and output is handled as described above.  Only one logger cap capture a stream,
+the last capture will get the stream data.
+
+The written data must be 'string' or 'Buffer', object mode is not supported and throws a
+TypeError.  Buffers are converted to utf8 and are logged as text.  The assumption is that
+Buffers contain complete log messages not binary data, so utf8 chars split across data
+chunks will not work right.
 
         const logger = kubelogger('info', 'stdout').captureWrites(process.stdout);
         console.log('gotcha!');
