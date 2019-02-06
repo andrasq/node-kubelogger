@@ -52,10 +52,8 @@ stringified string or object being logged.
 ### logger.captureWrites( stream )
 
 Convert all writes to the given stream into log messages sent to this logger.  Log message
-formatting and output is handled as described above.
-
- to k8s compatible log messages written to stdout.  The log
-messages will be json bundles with fields `time`, `type` and `message`.
+formatting and output is handled as described above.  Unlike `Stream.write`, the written
+arguments are not checked to be 'string' or 'Buffer'.
 
         const logger = kubelogger('info', 'stdout').captureWrites(process.stdout);
         console.log('gotcha!');
