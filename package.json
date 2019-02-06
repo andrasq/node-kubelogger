@@ -11,7 +11,7 @@
   "repository": { "type": "git", "url": "git@github.com:andrasq/node-kubelogger" },
 
   "dependencies": {
-    "qlogger": "1.6.0"
+    "qlogger": "1.5.2"
   },
 
   "scripts":{
