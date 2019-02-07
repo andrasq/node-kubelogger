@@ -22,6 +22,8 @@ var sysStdoutWrite = process.stdout.write;
 var sysFlushable = new QLogger().addWriter(process.stdout);
 
 module.exports = Kubelogger;
+module.exports.QLogger = QLogger;
+module.exports.filters = filters;
 
 /*
  * create a new logger for the specified type

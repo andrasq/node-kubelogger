@@ -19,6 +19,15 @@ module.exports = {
         t.done();
     },
 
+    'should export qlogger and its filters': function(t) {
+        t.equal(typeof kubelogger.QLogger, 'function');
+        t.equal(typeof kubelogger.filters, 'object');
+        t.equal(typeof kubelogger.filters.BasicFilter, 'function');
+        t.equal(typeof kubelogger.filters.JsonFilter, 'function');
+        t.equal(typeof kubelogger.filters.formatJsDateIsoString, 'function');
+        t.done();
+    },
+
     'should build a qlogger': function(t) {
         t.ok(kubelogger() instanceof kubelogger);
         t.ok(kubelogger() instanceof qlogger);
