@@ -78,6 +78,7 @@ logging error(s).  Call when exiting the app to not leave unwritten messages in 
 Change Log
 ----------
 
+- 0.9.1 - upgrade qlogger version
 - 0.9.0 - first version
 
 
