@@ -82,7 +82,6 @@ Kubelogger.captureWrites = function captureWrites( stream, logit ) {
         logit(chunk, cb);
     }
     stream.write.restore = function() { return (stream.write = streamWriter) };
-    //this.capturedWrites.push(stream);
 }
 
 // flush the writes still in progress and unhook the intercepts
