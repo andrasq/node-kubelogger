@@ -37,9 +37,12 @@ API
 
 ### logger = kubelogger( loglevel, type )
 
-Create a new logger.  The default loglevel is 'info', the default type 'undefined'.  The
-logger is `instanceof qlogger` with a predefined filter to convert all log messages into
-json bundles, and a predefined writer to write the bundle to the process stdout.
+Create a new logger.  The default loglevel is 'info', the default type 'undefined'.
+
+The logger is `instanceof qlogger` with a predefined filter to convert all log messages into
+json bundles, and a predefined writer to write the bundle to the process stdout.  Note that
+unlike an ordinary `qlogger`, a `kubelogger` will apply its built-in serializer filter as the
+last filtering step even if other filters are added.
 
 The json bundles have properties `time`, `type` and `message`.  Time is formatted like
 `Date.toISOString()`, but much faster (faster than `String(Date.now())`; faster even than

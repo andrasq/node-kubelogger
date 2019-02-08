@@ -46,7 +46,7 @@ function Kubelogger( level, type ) {
         fflush: function(cb) { Kubelogger.fflush(cb) },
     });
 
-    // use a custom addFilter to keep our json serializer as the last filter
+    // install our custom serializer, and use a custom addFilter to keep our builtin as the last filter
     this._filters.push(function(str, level) { return Kubelogger.formatMessage(getFormattedTimestamp(), type, str) });
     this.addFilter = function addKubeFilter(func, level) {
         this._filters.splice(this._filters.length - 1, 0, func);
