@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "readme": "see README.md in the repo",
 
-  "keywords": [ "k8s", "kubernetes", "kube", "logger", "stdout", "log", "quick" ],
+  "keywords": [ "k8s", "kubernetes", "kube", "logger", "stdout", "log", "quick", "json" ],
   "author": "andrasq",
   "repository": { "type": "git", "url": "git@github.com:andrasq/node-kubelogger" },
 
