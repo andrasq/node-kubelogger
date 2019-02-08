@@ -85,6 +85,25 @@ module.exports = {
         t.done();
     },
 
+    'addFilter should leave built-in json serialization step at end': function(t) {
+        var logger = kubelogger('info', 'filtered');
+        t.expect(6);
+        logger.addFilter(function(obj) { obj.filtered = true; return obj });
+        t.equal(logger.getFilters().length, 2);
+
+        var spy = t.stubOnce(kubelogger, 'write', function(str, cb) { cb() });
+        logger.info({ test: 12345 });
+        logger.fflush(function() {
+            t.equal(spy.callCount, 1);
+            var json = JSON.parse(spy.args[0][0]);
+            t.ok(/^\d{4}-\d{2}-\d{2}/.test(json.time));
+            t.strictEqual(json.type, 'filtered');
+            t.strictEqual(json.message.test, 12345);
+            t.strictEqual(json.message.filtered, true);
+            t.done();
+        })
+    },
+
     'captureWrites': {
         'should capture and restore writes': function(t) {
             var logger = kubelogger('info', 'STDOUT').captureWrites(process.stdout);

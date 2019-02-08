@@ -10,6 +10,9 @@ bundles and write them to the process stdout.  Different log streams can be dist
 their `type`.  All kubelogger output is written to stdout as newline terminated json bundles.
 Each bundle has fields `time` and `type`, plus the `message`.
 
+Kubelogger is an object logger where ideally each `message` is an object.  Already serialized
+objects will be logged as strings, and will get doubly stringified.
+
 
 Quick Start
 -----------
@@ -78,7 +81,7 @@ logging error(s).  Call when exiting the app to not leave unwritten messages in 
 Change Log
 ----------
 
-- 0.9.2 - expose the `QLogger` and `filters` used
+- 0.9.2 - expose the `QLogger` and `filters` used, make addFilter work right
 - 0.9.1 - upgrade qlogger version
 - 0.9.0 - first version
 
