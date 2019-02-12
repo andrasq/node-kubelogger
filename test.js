@@ -7,6 +7,7 @@
 
 'use strict'
 
+var child_process = require('child_process');
 var sysStdout = process.stdout;
 var sysWrite = process.stdout.write;
 
@@ -80,9 +81,12 @@ module.exports = {
     },
 
     'Kubelogger.write should write to stdout': function(t) {
-        // TODO: run a child process, check its output
-        kubelogger.write('testing 1 2 3\n');
-        t.done();
+        var cmdline = 'echo \'require("./").write("testing 1 2 3\\\\n")\' | node';
+        child_process.exec(cmdline, function(err, stdout, stderr) {
+            t.ifError(err);
+            t.contains(stdout, /^testing 1 2 3\n/);
+            t.done();
+        })
     },
 
     'addFilter should leave built-in json serialization step at end': function(t) {
@@ -125,10 +129,12 @@ module.exports = {
         'should displace an existing capture': function(t) {
             var logger1 = kubelogger('info', 'cap1').captureWrites(process.stdout);
             var logger2 = kubelogger('info', 'cap2').captureWrites(process.stdout);
-            var spy = t.stubOnce(kubelogger, 'write', function(str, cb) { cb() });
+            var spy = t.stub(kubelogger, 'write', function(str, cb) { cb() });
             console.log("captured text");
             t.ok(spy.called);
+            t.equal(spy.callCount, 1);
             t.contains(spy.args[0][0], '"type":"cap2"');
+            process.stdout.write.restore();
             t.done();
         },
 
