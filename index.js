@@ -105,11 +105,14 @@ Kubelogger._captureWrites = function _captureWrites( stream, logit ) {
 //   - if a previous listener decided to not kill the system, we let it be
 //   - if a previous listener rethrew the error, the program died and we dont run
 //   - if a subsequent listener exists, it can decide what should happen, we let it be
+//   - if a subsequent listener rethrows, it kills the program, we dont see the same error again
 //   - else if there was no previous listener and there are no other listeners after us,
 //     we emulate the default behavior and rethrow the error to stop the program
 // Note that if a listener after us rethrows the error, our fflush will get killed.
 // Note that the presence of a transient listen-once passive listener (like ourselves) can
 // confuse a listener (us) into not rethrowing; hooking to 'uncaughtException' is tricky.
+// Corner cases:
+//   - a rethrow from an async callback outside the listener will not kill the program
 //
 Kubelogger._captureUncaughtException = function _captureUncaughtException( stream ) {
     var hadPreviousListener = (process.listeners('uncaughtException').length > 0);
