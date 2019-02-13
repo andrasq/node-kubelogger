@@ -58,8 +58,8 @@ stringified string or object being logged.
 ### logger.captureWrites( stream )
 
 Convert all writes to the given stream into log messages sent to this logger.  Log message
-formatting and output is handled as described above.  Only one logger can capture a stream,
-the last capture will get the stream data.
+formatting and output is handled as described above.  Only one logger can capture a stream
+at a time; the most recent capture will get the data.
 
 The written data must be 'string' or 'Buffer', object mode is not supported and throws a
 TypeError.  Buffers are converted to utf8 and are logged as text.  The assumption is that
@@ -68,8 +68,8 @@ chunks will not work right.
 
 If the stream being captured is `process.stderr`, any global `uncaughtException` events
 will also be converted and written to the stream.  Because of the way `uncaughtException`
-events work, if there are no other uncaughtException listeners kubelogger rethrows the
-fatal error to maintain the default behavior of stopping the program; if there are, it
+works, if there are no other uncaughtException listeners kubelogger will rethrow the fatal
+error to maintain the default behavior and stop the program; if there are others, it
 leaves it up to them to decide.
 
         const logger = kubelogger('info', 'stdout').captureWrites(process.stdout);
