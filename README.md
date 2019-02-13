@@ -66,6 +66,12 @@ TypeError.  Buffers are converted to utf8 and are logged as text.  The assumptio
 Buffers contain complete log messages not binary data, so utf8 chars split across data
 chunks will not work right.
 
+If the stream being captured is `process.stderr`, any global `uncaughtException` events
+will also be converted and written to the stream.  Because of the way `uncaughtException`
+events work, if there are no other uncaughtException listeners kubelogger rethrows the
+fatal error to maintain the default behavior of stopping the program; if there are, it
+leaves it up to them to decide.
+
         const logger = kubelogger('info', 'stdout').captureWrites(process.stdout);
         console.log('gotcha!');
         // => {"time":"2019-02-05T20:13:14.483Z","type":"stdout","message":"gotcha!\n"}
@@ -84,6 +90,7 @@ logging error(s).  Call when exiting the app to not leave unwritten messages in 
 Change Log
 ----------
 
+- 0.9.3 - also capture and write uncaught global exceptions
 - 0.9.2 - expose the `QLogger` and `filters` used, make addFilter work right
 - 0.9.1 - upgrade qlogger version
 - 0.9.0 - first version
