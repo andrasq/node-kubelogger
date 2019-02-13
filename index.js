@@ -67,6 +67,10 @@ Kubelogger._formatMessage = function _formatMessage( time, type, message) {
     return '{"time":"' + time + '","type":"' + type + '","message":' + message + '}\n';
 };
 Kubelogger._restoreWrites = function _restoreWrites( stream ) {
+    if (typeof stream._kubeErrorListener === 'function') {
+        process.removeListener('uncaughtException', stream._kubeErrorListener);
+        delete stream._kubeErrorListener;
+    }
     if (stream.write && typeof stream.write.restore === 'function' && stream.write.name === '_writeCatcher_') {
         stream.write.restore();
     }
@@ -88,7 +92,42 @@ Kubelogger._captureWrites = function _captureWrites( stream, logit ) {
         logit(chunk, cb);
     }
     stream.write.restore = function() { return (stream.write = streamWriter) };
+
+    if (stream === process.stderr) {
+        stream._kubeErrorListener = Kubelogger._captureUncaughtException(stream);
+    }
 }
+
+// If we are the only exception listener then we need to rethrow to stop the program,
+// otherwise we can let the other exception listeners deal with deciding whether to stop.
+// If a listener rethrows the exception before us, the process exits before we get to run.
+// Our rethrow logic is as follows:
+//   - if a previous listener decided to not kill the system, we let it be
+//   - if a previous listener rethrew the error, the program died and we dont run
+//   - if a subsequent listener exists, it can decide what should happen, we let it be
+//   - else if there was no previous listener and there are no other listeners after us,
+//     we emulate the default behavior and rethrow the error to stop the program
+// Note that if a listener after us rethrows the error, our fflush will get killed.
+// Note that the presence of a transient listen-once passive listener (like ourselves) can
+// confuse a listener (us) into not rethrowing; hooking to 'uncaughtException' is tricky.
+//
+Kubelogger._captureUncaughtException = function _captureUncaughtException( stream ) {
+    var hadPreviousListener = (process.listeners('uncaughtException').length > 0);
+    function _exceptionCatcher_(err) {
+        stream.write('uncaughtException: ' + (err && err.stack || String(err)));
+        var needToRethrow = (!hadPreviousListener && process.listeners('uncaughtException').length === 0);
+        Kubelogger._fflush(function() {
+            if (needToRethrow) Kubelogger._rethrow(err);
+            else process.once('uncaughtException', _exceptionCatcher_);
+        })
+    }
+    // auto-remove our listener to not influence any other error handlers
+    process.once('uncaughtException', _exceptionCatcher_);
+    return _exceptionCatcher_;
+}
+Kubelogger._rethrow = function _rethrow(err) {
+    throw err;
+};
 
 // flush the writes still in progress and unhook the intercepts
 Kubelogger.prototype.close = function close( cb ) {

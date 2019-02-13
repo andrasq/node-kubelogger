@@ -184,10 +184,107 @@ module.exports = {
             logger.close(t.done.bind(t));
         },
 
+        // run this test last! it kills the process
+        'should capture uncaughtException messages when capturing stderr ': function(t) {
+            // remove the error global listener installed by the unit test runner to not die on our test error
+            var listeners = removeAllListeners(process, 'uncaughtException');
+
+            var logger = kubelogger().captureWrites(process.stderr);
+            var spy = t.stub(kubelogger, '_write');
+            setTimeout(function() {
+                throw new Error('uncaught mock global exception');
+            })
+            setTimeout(function() {
+                spy.restore();
+
+                // restore the unit test error listeners for the other tests
+                addListeners(process, 'uncaughtException', listeners);
+
+                t.ok(spy.called);
+                t.contains(JSON.parse(spy.args[0][0]).message, /uncaughtException:/);
+                t.contains(JSON.parse(spy.args[0][0]).message, /uncaught mock global exception/m);
+
+                t.done();
+            }, 10);
+            // prevent the catcher from rethrowing the error and killing the process
+            process.once('uncaughtException', function(err) { });
+        },
+
+        'kubelogger._rethrow should throw the error': function(t) {
+            var err = new Error('mock error');
+            t.throws(function(){ kubelogger._rethrow(err) }, 'mock error');
+            t.done();
+        },
+
+        'should use kubelogger._rethrow to rethrow error if no other uncaught exception listeners': function(t) {
+            var listeners = removeAllListeners(process, 'uncaughtException');
+            var stub = t.stubOnce(kubelogger, '_write', function(s, cb) { cb() });
+            var spy = t.stub(kubelogger, '_rethrow');
+            kubelogger().captureWrites(process.stderr);
+            setTimeout(function() {
+                throw new Error('mock global error');
+            });
+            setTimeout(function() {
+                spy.restore();
+                addListeners(process, 'uncaughtException', listeners);
+                t.ok(spy.called);
+                t.equal(String(spy.args[0][0]), 'Error: mock global error');
+                t.done();
+            }, 10);
+        },
+
+        'should run all exception listeners and not rethrow if have other uncaught exception listeners': function(t) {
+            var listeners = removeAllListeners(process, 'uncaughtException');
+
+            var errorList = [];
+            process.once('uncaughtException', function before(err) { errorList.push(err) });
+            kubelogger().captureWrites(process.stderr);
+            process.once('uncaughtException', function after(err) { errorList.push(err) });
+            var stub = t.stubOnce(kubelogger, '_write', function(str, cb) { cb() });
+            var spy = t.spy(kubelogger, '_rethrow');
+
+            setTimeout(function() {
+                throw 'mock uncaught error';
+            });
+            setTimeout(function() {
+                var listenerCount = process.listeners('uncaughtException').length;
+                addListeners(process, 'uncaughtException', listeners);
+                var restoredListenersCount = process.listeners('uncaughtException').length;
+                
+                t.ok(stub.called);
+                t.ok(!spy.called);
+                t.deepEqual(errorList, ['mock uncaught error', 'mock uncaught error']);
+                // kubelogger was still listening, the other two were one-shot
+                t.equal(listenerCount, 1);
+
+                kubelogger._restoreWrites(process.stderr);
+                // should have now removed the kubelogger listener too
+                t.equal(process.listeners('uncaughtException').length, restoredListenersCount - 1);
+                t.done();
+            }, 10);
+        },
+
+        'should capture stderr many times without exceeding maxListeners': function(t) {
+            for (var i=0; i<100; i++) kubelogger().captureWrites(process.stderr);
+            process.stderr.write.restore();
+            t.done();
+        },
+
         'last': function(t) {
             // invoke kubelogger.write() directly too, test coverage does not traverse a fork()
             kubelogger._write('Last\n');
             t.done();
         },
     },
+}
+
+function removeAllListeners( emitter, event ) {
+    var listeners = emitter.listeners(event);
+    for (var i=0; i<listeners.length; i++) emitter.removeListener(event, listeners[i]);
+    return listeners;
+}
+
+function addListeners( emitter, event, listeners ) {
+    for (var i=0; i<listeners.length; i++) emitter.on(event, listeners[i]);
+    return listeners;
 }
