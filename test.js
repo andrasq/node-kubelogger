@@ -41,13 +41,13 @@ module.exports = {
     },
 
     'should log a message': function(t) {
-        var spy = t.stubOnce(kubelogger, 'write');
+        var spy = t.stubOnce(kubelogger, '_write');
         kubelogger('info', 'stdout').info('Hello, test.');
         t.done();
     },
 
     'shold add a timestamp': function(t) {
-        var spy = t.stubOnce(kubelogger, 'write');
+        var spy = t.stubOnce(kubelogger, '_write');
         kubelogger('info', 'stdout').info('Hello, test.');
         t.ok(spy.called);
         t.contains(spy.args[0][0], '"time":');
@@ -55,7 +55,7 @@ module.exports = {
     },
 
     'should use the provided type': function(t) {
-        var spy = t.stubOnce(kubelogger, 'write');
+        var spy = t.stubOnce(kubelogger, '_write');
         kubelogger('info', 'customType').info('Hello, test.');
         t.ok(spy.called);
         t.contains(spy.args[0][0], '"type":"customType"');
@@ -63,7 +63,7 @@ module.exports = {
     },
 
     'should serialize objects': function(t) {
-        var spy = t.stubOnce(kubelogger, 'write');
+        var spy = t.stubOnce(kubelogger, '_write');
         kubelogger().info({ a: 1, b: 2 });
         t.ok(spy.called);
         t.contains(spy.args[0][0], '{"a":1,"b":2}');
@@ -71,7 +71,7 @@ module.exports = {
     },
 
     'should tolerate unserializable objects': function(t) {
-        var spy = t.stubOnce(kubelogger, 'write');
+        var spy = t.stubOnce(kubelogger, '_write');
         var obj = { a: 1, b: 2 };
         obj.r = obj;
         kubelogger().info(obj);
@@ -80,8 +80,8 @@ module.exports = {
         t.done();
     },
 
-    'Kubelogger.write should write to stdout': function(t) {
-        var cmdline = 'echo \'require("./").write("testing 1 2 3\\\\n")\' | node';
+    'Kubelogger._write should write to stdout': function(t) {
+        var cmdline = 'echo \'require("./")._write("testing 1 2 3\\\\n")\' | node';
         child_process.exec(cmdline, function(err, stdout, stderr) {
             t.ifError(err);
             t.contains(stdout, /^testing 1 2 3\n/);
@@ -95,7 +95,7 @@ module.exports = {
         logger.addFilter(function(obj) { obj.filtered = true; return obj });
         t.equal(logger.getFilters().length, 2);
 
-        var spy = t.stubOnce(kubelogger, 'write', function(str, cb) { cb() });
+        var spy = t.stubOnce(kubelogger, '_write', function(str, cb) { cb() });
         logger.info({ test: 12345 });
         logger.fflush(function() {
             t.equal(spy.callCount, 1);
@@ -112,7 +112,7 @@ module.exports = {
         'should capture and restore writes': function(t) {
             var logger = kubelogger('info', 'STDOUT').captureWrites(process.stdout);
             t.equal(logger.capturedWrites.length, 1);
-            var spy = t.stub(kubelogger, 'write', function(str, cb) { cb() });
+            var spy = t.stub(kubelogger, '_write', function(str, cb) { cb() });
             console.log('Hello, world.');
             process.stdout.write('Hello again');
             logger.restoreWrites(process.stdout);
@@ -129,8 +129,9 @@ module.exports = {
         'should displace an existing capture': function(t) {
             var logger1 = kubelogger('info', 'cap1').captureWrites(process.stdout);
             var logger2 = kubelogger('info', 'cap2').captureWrites(process.stdout);
-            var spy = t.stub(kubelogger, 'write', function(str, cb) { cb() });
+            var spy = t.stub(kubelogger, '_write', function(str, cb) { cb() });
             console.log("captured text");
+            spy.restore();
             t.ok(spy.called);
             t.equal(spy.callCount, 1);
             t.contains(spy.args[0][0], '"type":"cap2"');
@@ -155,19 +156,19 @@ module.exports = {
 
         'should not restore write if is not own capture function': function(t) {
             var logger = kubelogger();
-            var obj = { write: 1 };
-            logger.captureWrites(obj);
-            t.equal(typeof obj.write, 'function');
+            var writer = { write: 1 };
+            logger.captureWrites(writer);
+            t.equal(typeof writer.write, 'function');
             var newWrite = function(){};
-            obj.write = newWrite;
-            logger.restoreWrites(obj);
-            t.equal(obj.write, newWrite);
+            writer.write = newWrite;
+            logger.restoreWrites(writer);
+            t.equal(writer.write, newWrite);
             t.done();
         },
 
         'captureWrites should accept buffers': function(t) {
             var logger = kubelogger().captureWrites(process.stdout);
-            var spy = t.stub(kubelogger, 'write', function(str, cb) { cb() });
+            var spy = t.stub(kubelogger, '_write', function(str, cb) { cb() });
             process.stdout.write(new Buffer("Buffer test"));
             logger.close(function() {
                 spy.restore();
@@ -184,7 +185,8 @@ module.exports = {
         },
 
         'last': function(t) {
-            console.log("Last");
+            // invoke kubelogger.write() directly too, test coverage does not traverse a fork()
+            kubelogger._write('Last\n');
             t.done();
         },
     },

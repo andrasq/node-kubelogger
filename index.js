@@ -42,12 +42,12 @@ function Kubelogger( level, type ) {
     QLogger.call(this, level);
     this.addWriter({
         // wrapper the actual functions to provide a seam for testability
-        write: function(str, cb) { Kubelogger.write(str, cb) },
-        fflush: function(cb) { Kubelogger.fflush(cb) },
+        write: function write(str, cb) { Kubelogger._write(str, cb) },
+        fflush: function fflush(cb) { Kubelogger._fflush(cb) },
     });
 
     // install our custom serializer, and use a custom addFilter to keep our builtin as the last filter
-    this._filters.push(function(str, level) { return Kubelogger.formatMessage(getFormattedTimestamp(), type, str) });
+    this._filters.push(function filter(str, level) { return Kubelogger._formatMessage(getFormattedTimestamp(), type, str) });
     this.addFilter = function addKubeFilter(func, level) {
         this._filters.splice(this._filters.length - 1, 0, func);
         return this;
@@ -55,33 +55,33 @@ function Kubelogger( level, type ) {
 }
 util.inherits(Kubelogger, QLogger);
 
-Kubelogger.write = function write( message, callback ) {
+Kubelogger._write = function _write( message, callback ) {
     sysStdoutWrite.call(sysStdout, message, callback);
 }
-Kubelogger.fflush = function fflush( callback ) {
+Kubelogger._fflush = function _fflush( callback ) {
     sysFlushable.fflush(callback);
 }
-Kubelogger.formatMessage = function( time, type, message) {
+Kubelogger._formatMessage = function _formatMessage( time, type, message) {
     // convert objects into newline terminated json bundles
     try { message = JSON.stringify(message) } catch (err) { message = '"[unserializable object]"' }
     return '{"time":"' + time + '","type":"' + type + '","message":' + message + '}\n';
 };
-Kubelogger.restoreWrites = function restoreWrites( stream ) {
-    if (typeof stream.write.restore === 'function' && stream.write.name === '_writeCatcher_') {
+Kubelogger._restoreWrites = function _restoreWrites( stream ) {
+    if (stream.write && typeof stream.write.restore === 'function' && stream.write.name === '_writeCatcher_') {
         stream.write.restore();
     }
 }
-Kubelogger.captureWrites = function captureWrites( stream, logit ) {
+Kubelogger._captureWrites = function _captureWrites( stream, logit ) {
     // a stream can be sending its writes to only one logger at a time
-    if (stream.write.name === '_writeCatcher_') Kubelogger.restoreWrites(stream);
+    Kubelogger._restoreWrites(stream);
 
     var streamWriter = stream.write;
     stream.write = function _writeCatcher_(chunk, encoding, cb) {
         if (!cb && typeof encoding === 'function') { cb = encoding; encoding = null }
 
+        // TODO: optionally split multi-line strings into separate messages
         // Note: buffers are assumed to not split utf8 chars across chunk boundaries
         //   This is a safe assumption for line-at-a-time text streams like the console.
-        // TODO: optionally split multi-line strings into separate messages
 
         if (chunk instanceof Buffer) chunk = String(chunk);
         else if (chunk.constructor !== String) throw new TypeError('Invalid data, chunk must be a string or Buffer');
@@ -99,9 +99,9 @@ Kubelogger.prototype.close = function close( cb ) {
 // redirect writes on the stream (eg process.stdout) to our logger instead
 Kubelogger.prototype.captureWrites = function captureWrites( stream ) {
     var logger = this;
-    Kubelogger.captureWrites(stream, function(str, cb) {
+    Kubelogger._captureWrites(stream, function(str, cb) {
         logger.log(str);
-        if (cb) Kubelogger.fflush(cb);
+        if (cb) Kubelogger._fflush(cb);
     })
     this.capturedWrites.push(stream);
     return this;
@@ -109,11 +109,14 @@ Kubelogger.prototype.captureWrites = function captureWrites( stream ) {
 
 // restore direct writes to the given stream (eg process.stdout)
 Kubelogger.prototype.restoreWrites = function restoreWrites( stream ) {
-    Kubelogger.restoreWrites(stream);
+    Kubelogger._restoreWrites(stream);
     var ix = this.capturedWrites.indexOf(stream);
     if (ix >= 0) this.capturedWrites.splice(ix, 1);
     return this;
 }
+
+Kubelogger.prototype = toStruct(Kubelogger.prototype);
+function toStruct(obj) { return toStruct.prototype = obj }
 
 
 // nb: console.log is slow, about 150k 70-char lines / sec (both direct and with .call)
