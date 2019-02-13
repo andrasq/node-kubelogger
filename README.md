@@ -90,9 +90,9 @@ logging error(s).  Call when exiting the app to not leave unwritten messages in 
 Change Log
 ----------
 
-- 0.9.3 - also capture and write uncaught global exceptions
+- 0.9.3 - capture and write uncaught global exceptions, stringify type
 - 0.9.2 - expose the `QLogger` and `filters` used, make addFilter work right
-- 0.9.1 - upgrade qlogger version
+- 0.9.1 - upgrade qlogger
 - 0.9.0 - first version
 
 

@@ -35,7 +35,7 @@ function Kubelogger( level, type ) {
     // TODO: allow options to override some defaults: timestamp, template
     if (!(this instanceof Kubelogger)) return new Kubelogger(level, type);
 
-    type = String(type);
+    type = JSON.stringify(String(type));
     this.capturedWrites = [];
 
     // inherit from QLogger, and configure self
@@ -64,7 +64,7 @@ Kubelogger._fflush = function _fflush( callback ) {
 Kubelogger._formatMessage = function _formatMessage( time, type, message) {
     // convert objects into newline terminated json bundles
     try { message = JSON.stringify(message) } catch (err) { message = '"[unserializable object]"' }
-    return '{"time":"' + time + '","type":"' + type + '","message":' + message + '}\n';
+    return '{"time":"' + time + '","type":' + type + ',"message":' + message + '}\n';
 };
 Kubelogger._restoreWrites = function _restoreWrites( stream ) {
     if (typeof stream._kubeErrorListener === 'function') {
