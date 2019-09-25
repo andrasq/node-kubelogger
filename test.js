@@ -8,6 +8,7 @@
 'use strict'
 
 var child_process = require('child_process');
+var qibl = require('qibl');
 var sysStdout = process.stdout;
 var sysWrite = process.stdout.write;
 
@@ -169,7 +170,7 @@ module.exports = {
         'captureWrites should accept buffers': function(t) {
             var logger = kubelogger().captureWrites(process.stdout);
             var spy = t.stub(kubelogger, '_write', function(str, cb) { cb() });
-            process.stdout.write(new Buffer("Buffer test"));
+            process.stdout.write(qibl.newBuf("Buffer test"));
             logger.close(function() {
                 spy.restore();
                 t.contains(spy.args[0][0], '"message":"Buffer test"');
