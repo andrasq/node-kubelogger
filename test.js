@@ -85,7 +85,7 @@ module.exports = {
         var cmdline = 'echo \'require("./")._write("testing 1 2 3\\\\n")\' | node';
         child_process.exec(cmdline, function(err, stdout, stderr) {
             t.ifError(err);
-            t.contains(stdout, /^testing 1 2 3\n/);
+            t.contains(stdout, /^testing 1 2 3\n/m);
             t.done();
         })
     },
