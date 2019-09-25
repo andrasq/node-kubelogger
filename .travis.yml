@@ -1,8 +1,8 @@
 language: node_js
 node_js:
   # works with node-v0.6 and 0.8, but fs-ext might not build on them
-  # v0.8 does not automatically install qibl before testing
-  - 0.8
+  # v0.8 on travis does not find qibl
+  # - 0.8
   - 0.10
   - 6
   - 8
