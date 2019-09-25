@@ -1,11 +1,13 @@
 language: node_js
 node_js:
   # works with node-v0.6 and 0.8, but fs-ext might not build on them
+  - 0.8
   - 0.10
   - 6
   - 8
   - 9
   - 10
+  - 12
 before_install:
   - npm install -g qnit
 after_success:
