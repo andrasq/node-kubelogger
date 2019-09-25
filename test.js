@@ -185,6 +185,26 @@ module.exports = {
             logger.close(t.done.bind(t));
         },
 
+        'write should invoke callback without encoding': function(t) {
+            var logger = kubelogger().captureWrites(process.stdout);
+            t.expect(1);
+            process.stdout.write("test message", function() {
+                t.ok(true);
+                logger.close(function() {
+                    t.done();
+                })
+            })
+        },
+
+        'write should invoke callback with encoding': function(t) {
+            var logger = kubelogger().captureWrites(process.stdout);
+            t.expect(1);
+            process.stdout.write("test message", 'utf8', function() {
+                t.ok(true);
+                logger.close(t.done.bind(t));
+            })
+        },
+
         // run this test last! it kills the process
         'should capture uncaughtException messages when capturing stderr ': function(t) {
             // remove the error global listener installed by the unit test runner to not die on our test error

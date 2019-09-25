@@ -143,6 +143,8 @@ Kubelogger.prototype.captureWrites = function captureWrites( stream ) {
     var logger = this;
     Kubelogger._captureWrites(stream, function(str, cb) {
         logger.log(str);
+        // TODO: why call *this* callback on write?  Notification?
+        // TODO: Note that the callback is undocumented.
         if (cb) Kubelogger._fflush(cb);
     })
     this.capturedWrites.push(stream);
